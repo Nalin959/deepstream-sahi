@@ -15,7 +15,9 @@
  * limitations under the License.
  *
  * DeepStream SAHI Post-Process Plugin
- * Merges duplicate detections from sliced inference using GreedyNMM.
+ * Merges duplicate detections from sliced inference using GreedyNMM with
+ * spatial indexing, two-phase merge, per-class partitioning, mask merge,
+ * and parallel per-frame processing.
  */
 
 #ifndef __GST_NVSAHIPOSTPROCESS_H__
@@ -24,12 +26,19 @@
 #include <gst/base/gstbasetransform.h>
 #include <gst/video/video.h>
 #include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#include <string>
 #include "gstnvdsmeta.h"
+#include "spatial_grid.h"
+#include "mask_merge.h"
 
 #define PACKAGE "nvsahipostprocess"
-#define VERSION "1.0"
+#define VERSION "1.2"
 #define LICENSE "Apache-2.0"
-#define DESCRIPTION "DeepStream SAHI post-process plugin — GreedyNMM duplicate merging"
+#define DESCRIPTION \
+    "DeepStream SAHI post-process plugin — GreedyNMM duplicate merging " \
+    "with spatial indexing, mask merge, and parallel frame processing"
 #define BINARY_PACKAGE "DeepStream SAHI Post-Process"
 #define URL "https://github.com/levipereira/deepstream-sahi"
 
@@ -53,28 +62,48 @@ typedef enum {
   SAHI_METRIC_IOS = 1,
 } SahiMatchMetric;
 
+typedef enum {
+  SAHI_MERGE_UNION    = 0,
+  SAHI_MERGE_WEIGHTED = 1,
+  SAHI_MERGE_LARGEST  = 2,
+} SahiMergeStrategy;
+
 typedef struct {
   gfloat left, top, right, bottom;
+  gfloat orig_left, orig_top, orig_right, orig_bottom;
   gfloat score;
   gint   class_id;
+  gchar  obj_label[128];
   gfloat area;
   NvDsObjectMeta *obj_meta;
   gboolean merged;
+
+  /* mask support */
+  SahiMaskData mask;
+  float *merged_mask_data;
+
+  /* cross-class merge: track highest-scoring contributor */
+  gfloat best_score;
+  gint   best_class_id;
+  gchar  best_label[128];
 } SahiDetection;
 
 struct _GstNvSahiPostProcess
 {
   GstBaseTransform base_trans;
 
-  gint              gie_id;
+  /* properties */
+  gchar            *gie_ids_str;
+  std::unordered_set<gint> *gie_ids;
+  gboolean          gie_filter_all;
   guint             match_metric;
   gfloat            match_threshold;
   gboolean          class_agnostic;
   gboolean          enable_merge;
-
-  std::vector<SahiDetection>  detections;
-  std::vector<bool>           suppressed;
-  std::vector<guint>          sorted_indices;
+  gboolean          two_phase_nmm;
+  guint             merge_strategy;
+  gint              max_detections;
+  gboolean          drop_mask_on_merge;
 };
 
 struct _GstNvSahiPostProcessClass

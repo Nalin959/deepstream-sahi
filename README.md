@@ -116,11 +116,15 @@ deepstream-sahi/
 - crops and rescales slices with `NvBufSurfTransform`
 - forwards the resulting data to `nvinfer`
 
-### `nvsahipostprocess`
+### `nvsahipostprocess` (v1.2)
 
 - reads detections from `NvDsObjectMeta`
-- merges duplicates created by overlapping slices
-- supports IoU and IoS based matching through GreedyNMM
+- merges duplicates created by overlapping slices using a two-phase GreedyNMM algorithm
+- supports IoU and IoS based matching with spatial hash grid indexing
+- merges instance-segmentation masks (element-wise maximum)
+- supports multiple GIE targeting (`gie-ids="1;3;5"`)
+- parallel per-frame processing via OpenMP
+- configurable merge strategy (union / weighted / largest)
 
 ### `nvdsinfer`
 
@@ -216,15 +220,11 @@ Training details are documented in `docs/TRAINING.md`.
 
 ## Limitations
 
-Current limitations identified in `docs/REVIEW.md` include:
+- The bidirectional NMM algorithm (non-greedy, transitive merge chains) is not implemented. GreedyNMM covers real-time use-cases adequately.
+- Merged mask resolution is capped at 512x512 to prevent excessive memory allocation.
+- Only single-source pipelines have been validated end-to-end; multi-source is supported via OpenMP parallelism but has not been benchmarked.
 
-- segmentation masks are not merged when bounding boxes are merged
-- class labels may remain unchanged in some `class-agnostic=true` merge cases
-- the merge step does not fully match the SAHI Python reference behavior
-- post-processing still uses `O(n^2)` pair comparisons in dense scenes
-- only single-source pipelines have been validated
-
-This repository is published as-is. It is useful as a reference implementation and a base for further work, but it should be reviewed and tested before use in production environments.
+For the full technical review, see `docs/REVIEW.md`.
 
 ## License
 
