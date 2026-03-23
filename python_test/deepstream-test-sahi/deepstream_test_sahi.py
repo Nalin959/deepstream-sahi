@@ -32,14 +32,14 @@
 #     → nvtracker → nvvidconv → nvdsosd → sink
 #
 # Usage:
-#   python3 deepstream_test_sahi.py --model <model> <video_file>
+#   python3 deepstream_test_sahi.py --model <model> -i <video_file>
 #
 # Examples:
-#   python3 deepstream_test_sahi.py --model visdrone-full-640 video.mp4
-#   python3 deepstream_test_sahi.py --model visdrone-sliced-448 video.mp4
-#   python3 deepstream_test_sahi.py --model visdrone-sliced-448 --tracker video.mp4
+#   python3 deepstream_test_sahi.py --model visdrone-full-640 -i video.mp4
+#   python3 deepstream_test_sahi.py --model visdrone-sliced-448 -i video.mp4
+#   python3 deepstream_test_sahi.py --model visdrone-sliced-448 --tracker -i video.mp4
 #   python3 deepstream_test_sahi.py --model visdrone-sliced-448 \
-#       --slice-width 448 --slice-height 448 --overlap-w 0.2 video.mp4
+#       --slice-width 448 --slice-height 448 --overlap-w 0.2 -i video.mp4
 #
 # Optional SAHI arguments:
 #   --slice-width       Slice width in pixels  (default: model's input_size)

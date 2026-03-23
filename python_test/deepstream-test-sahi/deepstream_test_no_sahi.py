@@ -28,13 +28,13 @@
 #     → nvvidconv → nvdsosd → sink
 #
 # Usage:
-#   python3 deepstream_test_no_sahi.py --model <model> <video_file>
+#   python3 deepstream_test_no_sahi.py --model <model> -i <video_file>
 #
 # Examples:
-#   python3 deepstream_test_no_sahi.py --model visdrone-full-640 video.mp4
-#   python3 deepstream_test_no_sahi.py --model visdrone-sliced-448 video.mp4
-#   python3 deepstream_test_no_sahi.py --model visdrone-full-640 --tracker video.mp4
-#   python3 deepstream_test_no_sahi.py --model visdrone-full-640 --display video.mp4
+#   python3 deepstream_test_no_sahi.py --model visdrone-full-640 -i video.mp4
+#   python3 deepstream_test_no_sahi.py --model visdrone-sliced-448 -i video.mp4
+#   python3 deepstream_test_no_sahi.py --model visdrone-full-640 --tracker -i video.mp4
+#   python3 deepstream_test_no_sahi.py --model visdrone-full-640 --display -i video.mp4
 ################################################################################
 
 import sys

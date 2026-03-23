@@ -501,7 +501,8 @@ def resolve_muxer_resolution(args):
 
 def add_common_args(parser):
     """Add arguments shared by both SAHI and no-SAHI test scripts."""
-    parser.add_argument("input", help="Path to video file (MP4, MKV, AVI, H264, …)")
+    parser.add_argument("-i", "--input", required=True,
+                        help="Path to video file (MP4, MKV, AVI, H264, …)")
     parser.add_argument(
         "--model", required=True,
         choices=list(MODELS.keys()),

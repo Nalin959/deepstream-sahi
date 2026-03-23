@@ -122,7 +122,7 @@ The test videos are not included in the repository. Download them from Google Dr
 /apps/deepstream-sahi/python_test/videos/
 ```
 
-> You can also use your own videos — just pass the file path as argument to the test scripts.
+> You can also use your own videos — just pass the file path with `-i` / `--input` to the test scripts.
 
 ## 5. Activate the Python Virtual Environment
 

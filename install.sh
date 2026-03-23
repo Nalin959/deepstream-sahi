@@ -252,6 +252,6 @@ if ! $PLUGINS_ONLY; then
     info "To run the test pipelines:"
     echo -e "  ${CYAN}source ${PYDS_VENV}/bin/activate${NC}"
     echo -e "  ${CYAN}cd ${TEST_DIR}${NC}"
-    echo -e "  ${CYAN}python3 deepstream_test_sahi.py --model visdrone-full-640 --no-display --csv ../videos/aerial_vehicles.mp4${NC}"
+    echo -e "  ${CYAN}python3 deepstream_test_sahi.py --model visdrone-full-640 --no-display --csv -i ../videos/aerial_vehicles.mp4${NC}"
 fi
 echo ""

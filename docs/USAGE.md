@@ -24,7 +24,7 @@ The test videos are hosted on Google Drive (not included in the repository). Dow
 /apps/deepstream-sahi/python_test/videos/
 ```
 
-> **Tip:** You can also use your own videos. Just pass the file path as the positional argument to the test scripts.
+> **Tip:** You can also use your own videos. Just pass the file path with `-i` / `--input` to the test scripts.
 
 ## Directory Layout
 
@@ -143,13 +143,13 @@ uridecodebin → nvstreammux → nvsahipreprocess → nvinfer → nvsahipostproc
 ```bash
 cd /apps/deepstream-sahi/python_test/deepstream-test-sahi
 
-python3 deepstream_test_sahi.py --model visdrone-full-640 ../videos/aerial_crowding_01.mp4
+python3 deepstream_test_sahi.py --model visdrone-full-640 -i ../videos/aerial_crowding_01.mp4
 ```
 
 ### With Display (requires X11 / WSLg)
 
 ```bash
-python3 deepstream_test_sahi.py --model visdrone-full-640 --display ../videos/aerial_crowding_01.mp4
+python3 deepstream_test_sahi.py --model visdrone-full-640 --display -i ../videos/aerial_crowding_01.mp4
 ```
 
 > By default, the pipeline uses `fakesink` (no display window). Use `--display` only when a display server is available. On WSL2 without X11 forwarding, `--display` will be ignored with a warning and the pipeline falls back to `fakesink` automatically.
@@ -157,7 +157,7 @@ python3 deepstream_test_sahi.py --model visdrone-full-640 --display ../videos/ae
 ### With Object Tracking
 
 ```bash
-python3 deepstream_test_sahi.py --model visdrone-sliced-448 --tracker ../videos/aerial_vehicles.mp4
+python3 deepstream_test_sahi.py --model visdrone-sliced-448 --tracker -i ../videos/aerial_vehicles.mp4
 ```
 
 ### Save Output as MP4
@@ -165,17 +165,17 @@ python3 deepstream_test_sahi.py --model visdrone-sliced-448 --tracker ../videos/
 ```bash
 python3 deepstream_test_sahi.py --model visdrone-full-640 \
     --output-mp4 results/output_sahi.mp4 \
-    ../videos/aerial_crowding_01.mp4
+    -i ../videos/aerial_crowding_01.mp4
 ```
 
 ### Export Per-Frame Detections to CSV
 
 ```bash
 # Auto-generated filename in results/
-python3 deepstream_test_sahi.py --model visdrone-full-640 --csv ../videos/aerial_vehicles.mp4
+python3 deepstream_test_sahi.py --model visdrone-full-640 --csv -i ../videos/aerial_vehicles.mp4
 
 # Custom path
-python3 deepstream_test_sahi.py --model visdrone-full-640 --csv results/my_test.csv ../videos/aerial_vehicles.mp4
+python3 deepstream_test_sahi.py --model visdrone-full-640 --csv results/my_test.csv -i ../videos/aerial_vehicles.mp4
 ```
 
 ### Custom SAHI Slice Parameters
@@ -185,7 +185,7 @@ python3 deepstream_test_sahi.py --model visdrone-sliced-448 \
     --slice-width 448 --slice-height 448 \
     --overlap-w 0.25 --overlap-h 0.25 \
     --match-metric 1 --match-threshold 0.5 \
-    ../videos/aerial_crowding_01.mp4
+    -i ../videos/aerial_crowding_01.mp4
 ```
 
 ### SAHI-Specific Arguments
@@ -210,15 +210,16 @@ uridecodebin → nvstreammux → nvinfer → nvdsosd → sink
 ```
 
 ```bash
-python3 deepstream_test_no_sahi.py --model visdrone-full-640 ../videos/aerial_crowding_01.mp4
+python3 deepstream_test_no_sahi.py --model visdrone-full-640 -i ../videos/aerial_crowding_01.mp4
 ```
 
-All common arguments (`--tracker`, `--display`, `--output-mp4`, `--csv`, `--resolution`) work the same as with the SAHI pipeline.
+All common arguments (`-i`, `--tracker`, `--display`, `--output-mp4`, `--csv`, `--resolution`) work the same as with the SAHI pipeline.
 
 ## Common Arguments (Both Pipelines)
 
 | Argument | Default | Description |
 |----------|---------|-------------|
+| `-i` / `--input` | **required** | Path to video file (MP4, MKV, AVI, H264, ...) |
 | `--model` | **required** | Model ID (see table above) |
 | `--resolution` | `1440p` | Muxer preset: `4k`, `1440p`, `1080p`, `720p` |
 | `--muxer-width` / `--muxer-height` | — | Custom muxer resolution (alternative to `--resolution`) |
@@ -264,10 +265,10 @@ VIDEO=../videos/aerial_crowding_01.mp4
 MODEL=visdrone-full-640
 
 # 1. Run SAHI pipeline (fakesink is the default — no --no-display needed)
-python3 deepstream_test_sahi.py --model $MODEL --csv $VIDEO
+python3 deepstream_test_sahi.py --model $MODEL --csv -i $VIDEO
 
 # 2. Run standard pipeline
-python3 deepstream_test_no_sahi.py --model $MODEL --csv $VIDEO
+python3 deepstream_test_no_sahi.py --model $MODEL --csv -i $VIDEO
 
 # 3. Compare results (use the CSV filenames generated above)
 python3 compare_results.py \

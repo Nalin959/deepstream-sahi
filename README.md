@@ -67,7 +67,7 @@ Inside the container:
 /apps/deepstream-sahi/install.sh
 source /opt/nvidia/deepstream/deepstream/sources/deepstream_python_apps/pyds/bin/activate
 cd /apps/deepstream-sahi/python_test/deepstream-test-sahi
-python3 deepstream_test_sahi.py --model visdrone-full-640 --no-display --csv ../videos/aerial_crowding_01.mp4
+python3 deepstream_test_sahi.py --model visdrone-full-640 --no-display --csv -i ../videos/aerial_crowding_01.mp4
 ```
 
 Test videos are available on [Google Drive](https://drive.google.com/drive/folders/1CRLnuH9AtTwmxRz7z-Mtu6ErKx__VMK4) and should be placed in `python_test/videos/`.
