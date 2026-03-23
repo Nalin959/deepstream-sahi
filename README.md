@@ -1,7 +1,7 @@
 # DeepStream SAHI
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![DeepStream](https://img.shields.io/badge/NVIDIA-DeepStream%208.0-76B900?logo=nvidia)](https://developer.nvidia.com/deepstream-sdk)
+[![DeepStream](https://img.shields.io/badge/NVIDIA-DeepStream%208.0%20|%209.0-76B900?logo=nvidia)](https://developer.nvidia.com/deepstream-sdk)
 [![TensorRT](https://img.shields.io/badge/TensorRT-10.x-orange)](https://developer.nvidia.com/tensorrt)
 
 Native GStreamer plugins that integrate **SAHI** (Slicing Aided Hyper Inference) into NVIDIA DeepStream for real-time small-object detection in high-resolution video streams.
@@ -117,11 +117,15 @@ git clone https://github.com/levipereira/deepstream-sahi.git
 cd deepstream-sahi
 
 # Launch DeepStream container (see docs/INSTALL.md for full options)
+# DeepStream 9.x:
 docker run -it --name deepstream-sahi --net=host --gpus all \
     -v `pwd`:/apps/deepstream-sahi -w /apps/deepstream-sahi \
-    nvcr.io/nvidia/deepstream:8.0-triton-multiarch
+    nvcr.io/nvidia/deepstream:9.0-triton-multiarch
+# DeepStream 8.x:
+# docker run -it ... nvcr.io/nvidia/deepstream:8.0-triton-multiarch
 
 # Inside the container — single command installs everything:
+# The installer auto-detects the DeepStream version and adapts accordingly.
 /apps/deepstream-sahi/install.sh
 
 # Download test videos into python_test/videos/ (see link below)
@@ -142,6 +146,7 @@ python3 deepstream_test_sahi.py --model visdrone-full-640 --no-display --csv ../
 | [Plugin Reference](docs/PLUGINS.md) | Complete documentation for nvsahipreprocess and nvsahipostprocess |
 | [Training Guide](docs/TRAINING.md) | SAHI-aware model training: why and how to train on sliced data |
 | [Test Results](docs/TEST_RESULTS.md) | Evaluation data: SAHI vs standard inference |
+| [Technical Review](docs/REVIEW.md) | Known issues, SAHI parity gaps, and performance analysis |
 
 ## Repository Structure
 
@@ -152,55 +157,50 @@ deepstream-sahi/
 │   │   ├── gst-nvsahipreprocess/       # SAHI dynamic-slice pre-process plugin
 │   │   └── gst-nvsahipostprocess/      # SAHI GreedyNMM post-process plugin
 │   └── libs/
-│       ├── nvdsinfer/                   # Modified inference lib (smart engine caching)
-│       └── nvdsinfer_yolo/              # YOLO custom bounding-box parser
+│       ├── nvdsinfer_8.0/              # Modified inference lib for DS 8.x
+│       ├── nvdsinfer_9.0/              # Modified inference lib for DS 9.x
+│       └── nvdsinfer_yolo/             # YOLO custom bounding-box parser
 ├── python_test/
-│   ├── common/                          # Shared GStreamer utilities
-│   ├── deepstream-test-sahi/            # Test pipelines, configs, models
-│   │   └── models/                      # ONNX models (Git LFS) + labels
-│   └── videos/                          # Test videos (download separately)
-├── train_yolov9_visdrone/               # Training outputs (full-frame + sliced)
-├── test_results/                        # Evaluation CSVs and comparison reports
-├── docs/                                # Full documentation
-├── install.sh                           # One-step build and install
+│   ├── common/                         # Shared GStreamer utilities
+│   ├── deepstream-test-sahi/           # Test pipelines, configs, models
+│   │   └── models/                     # ONNX models (Git LFS) + labels
+│   └── videos/                         # Test videos (download separately)
+├── train_yolov9_visdrone/              # Training outputs (full-frame + sliced)
+├── test_results/                       # Evaluation CSVs and comparison reports
+├── docs/                               # Full documentation
+├── install.sh                          # One-step build and install
 └── README.md
 ```
 
 ## Prerequisites
 
-| Requirement | Tested Version |
-|-------------|---------------|
-| NVIDIA DeepStream SDK | 8.0 |
-| CUDA Toolkit | 12.x |
-| GStreamer | 1.x (ships with DeepStream) |
-| TensorRT | 10.x (ships with DeepStream) |
-| Python | 3.12 (with DeepStream Python Bindings) |
-| [Git LFS](https://git-lfs.com/) | 3.x (for cloning ONNX models) |
+| Requirement | DeepStream 8.0 | DeepStream 9.0 |
+|-------------|----------------|----------------|
+| NVIDIA DeepStream SDK | 8.0 | 9.0 |
+| CUDA Toolkit | 12.8 | 13.1 |
+| TensorRT | 10.9.0 | 10.14.1 |
+| GStreamer | 1.24.2 (ships with DeepStream) | 1.24.2 (ships with DeepStream) |
+| Python Bindings | pyds 1.2.2 (pre-built) | built from source (`--build-bindings`) |
+
+
+> The `install.sh` script auto-detects the DeepStream version and adapts the build steps accordingly.
 
 ## Modified DeepStream Libraries
 
 ### nvdsinfer — Smart Engine File Caching
 
-Adds intelligent TensorRT engine file naming and auto-discovery. Instead of rebuilding the `.engine` file on every pipeline start, it generates a standardized name encoding batch size, input dimensions, GPU model, compute capability, TensorRT version, and precision:
+The repository ships version-specific builds of the `nvdsinfer` library under `deepstream_source/libs/nvdsinfer_8.0/` and `deepstream_source/libs/nvdsinfer_9.0/`. The installer auto-detects the DeepStream version and copies the matching source into the build tree.
+
+Both versions add intelligent TensorRT engine file naming and auto-discovery. Instead of rebuilding the `.engine` file on every pipeline start, the library generates a standardized name encoding batch size, input dimensions, GPU model, compute capability, TensorRT version, and precision:
 
 ```
 {model}_b{batch}_i{W}x{H}_{compute_cap}_{gpu}_{trt_ver}_{precision}.engine
 ```
 
-See [`ENGINE_FILE_NAMING_FEATURE.md`](deepstream_source/libs/nvdsinfer/ENGINE_FILE_NAMING_FEATURE.md) for the full specification.
-
-> Forum discussion: [Smart Engine File Caching for nvdsinfer](https://forums.developer.nvidia.com/t/feature-contribution-smart-engine-file-caching-for-nvdsinfer/358537)
-
+ 
 ### nvdsinfer_yolo — YOLO Custom Bounding-Box Parser
 
-Custom parsing functions for YOLO models exported with **EfficientNMS_TRT** and **EfficientNMSX_TRT + ROIAlign_TRT** TensorRT plugins:
-
-| Function | Model Type |
-|----------|-----------|
-| `NvDsInferYoloNMS` | Detection |
-| `NvDsInferYoloMask` | Instance Segmentation |
-
-> Source: [levipereira/nvdsinfer_yolo](https://github.com/levipereira/nvdsinfer_yolo)
+Custom parsing functions for YOLO models exported with **EfficientNMS_TRT** and **EfficientNMSX_TRT + ROIAlign_TRT** TensorRT plugins.
 
 ## SAHI is a Full-Pipeline Strategy
 
@@ -215,6 +215,26 @@ The key insight: **reducing the model input size does not hurt accuracy when com
 The GELAN-C architecture used here was chosen to isolate and validate the plugins, not because it is optimal for this use case. The real opportunity is lighter, purpose-built models. For instance, [Zhu & Xie (2026)](https://www.nature.com/articles/s41598-026-35301-2) achieve **+4.6% mAP50 on VisDrone while reducing parameters by ~8.5%** with an enhanced YOLOv11n. Combined with SAHI slicing, architectures like that could deliver better accuracy with significantly less GPU per inference — making this approach especially compelling for edge deployments.
 
 See the [Training Guide](docs/TRAINING.md) for details.
+
+## Known Limitations & Improvement Areas
+
+A comprehensive technical review of `nvsahipostprocess` identified the
+following areas where the plugin diverges from the SAHI Python reference
+or has room for optimization. See [`docs/REVIEW.md`](docs/REVIEW.md) for
+the full analysis with proposed solutions.
+
+**Feature gaps**:
+- **Instance-segmentation mask merge** — When detections are merged, the bounding box expands but segmentation masks are not updated or combined. Pipelines using YOLO-Seg will have misaligned masks after merge.
+- **Cross-class label update** — When `class-agnostic=true`, the surviving detection's `obj_label` is never updated after merge, which can be incorrect in edge cases with equal scores.
+
+**Algorithm divergences from SAHI Python**:
+- The C++ plugin uses a **single-phase** GreedyNMM that merges inline (more aggressive), while SAHI Python uses a two-phase approach (candidate selection on original boxes, then re-check before merge).
+- **Non-deterministic ordering** for detections with identical confidence scores (missing tie-breaking).
+
+**Performance at scale** (multi-source, dense scenes):
+- **O(n²) pair comparisons** — No spatial indexing; becomes a bottleneck above ~300 detections/frame. SAHI Python uses STRtree (R-tree) for ~O(n log n).
+- **Sequential frame processing** — Frames in a batch are processed one by one; independent frames could be parallelized.
+- **No per-class partitioning** — When `class-agnostic=false` (default), ~90% of pair comparisons are wasted on cross-class checks.
 
 ## Disclaimer
 
