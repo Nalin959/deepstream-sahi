@@ -146,6 +146,7 @@ python3 deepstream_test_sahi.py --model visdrone-full-640 --no-display --csv ../
 | [Plugin Reference](docs/PLUGINS.md) | Complete documentation for nvsahipreprocess and nvsahipostprocess |
 | [Training Guide](docs/TRAINING.md) | SAHI-aware model training: why and how to train on sliced data |
 | [Test Results](docs/TEST_RESULTS.md) | Evaluation data: SAHI vs standard inference |
+| [Technical Review](docs/REVIEW.md) | Known issues, SAHI parity gaps, and performance analysis |
 
 ## Repository Structure
 
@@ -223,6 +224,26 @@ The key insight: **reducing the model input size does not hurt accuracy when com
 The GELAN-C architecture used here was chosen to isolate and validate the plugins, not because it is optimal for this use case. The real opportunity is lighter, purpose-built models. For instance, [Zhu & Xie (2026)](https://www.nature.com/articles/s41598-026-35301-2) achieve **+4.6% mAP50 on VisDrone while reducing parameters by ~8.5%** with an enhanced YOLOv11n. Combined with SAHI slicing, architectures like that could deliver better accuracy with significantly less GPU per inference — making this approach especially compelling for edge deployments.
 
 See the [Training Guide](docs/TRAINING.md) for details.
+
+## Known Limitations & Improvement Areas
+
+A comprehensive technical review of `nvsahipostprocess` identified the
+following areas where the plugin diverges from the SAHI Python reference
+or has room for optimization. See [`docs/REVIEW.md`](docs/REVIEW.md) for
+the full analysis with proposed solutions.
+
+**Feature gaps**:
+- **Instance-segmentation mask merge** — When detections are merged, the bounding box expands but segmentation masks are not updated or combined. Pipelines using YOLO-Seg will have misaligned masks after merge.
+- **Cross-class label update** — When `class-agnostic=true`, the surviving detection's `obj_label` is never updated after merge, which can be incorrect in edge cases with equal scores.
+
+**Algorithm divergences from SAHI Python**:
+- The C++ plugin uses a **single-phase** GreedyNMM that merges inline (more aggressive), while SAHI Python uses a two-phase approach (candidate selection on original boxes, then re-check before merge).
+- **Non-deterministic ordering** for detections with identical confidence scores (missing tie-breaking).
+
+**Performance at scale** (multi-source, dense scenes):
+- **O(n²) pair comparisons** — No spatial indexing; becomes a bottleneck above ~300 detections/frame. SAHI Python uses STRtree (R-tree) for ~O(n log n).
+- **Sequential frame processing** — Frames in a batch are processed one by one; independent frames could be parallelized.
+- **No per-class partitioning** — When `class-agnostic=false` (default), ~90% of pair comparisons are wasted on cross-class checks.
 
 ## Disclaimer
 
