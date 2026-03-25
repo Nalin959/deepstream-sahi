@@ -83,7 +83,8 @@ For container variants, display notes, rebuild mode, and environment details, se
 | [Plugin Reference](docs/PLUGINS.md) | plugin properties and behavior |
 | [Training Guide](docs/TRAINING.md) | training workflow for sliced models |
 | [Test Results](docs/TEST_RESULTS.md) | evaluation data and charts |
-| [Technical Review](docs/REVIEW.md) | known issues, differences from SAHI Python, performance notes |
+| [Parameter Tests — Vehicles](docs/PARAMETER_TESTS.md) | postprocess parameter validation (moderate density) |
+| [Parameter Tests — Dense Crowd](docs/PARAMETER_TESTS_CROWDING.md) | postprocess parameter validation (high density) |
 
 ## Repository Structure
 
@@ -103,6 +104,8 @@ deepstream-sahi/
 │   └── videos/
 ├── train_yolov9_visdrone/
 ├── test_results/
+├── scripts/
+│   └── test_postprocess_params.sh
 ├── docs/
 ├── install.sh
 └── README.md
@@ -116,11 +119,15 @@ deepstream-sahi/
 - crops and rescales slices with `NvBufSurfTransform`
 - forwards the resulting data to `nvinfer`
 
-### `nvsahipostprocess`
+### `nvsahipostprocess` (v1.2)
 
 - reads detections from `NvDsObjectMeta`
-- merges duplicates created by overlapping slices
-- supports IoU and IoS based matching through GreedyNMM
+- merges duplicates created by overlapping slices using a two-phase GreedyNMM algorithm
+- supports IoU and IoS based matching with spatial hash grid indexing
+- merges instance-segmentation masks (element-wise maximum)
+- supports multiple GIE targeting (`gie-ids="1;3;5"`)
+- parallel per-frame processing via OpenMP
+- configurable merge strategy (union / weighted / largest)
 
 ### `nvdsinfer`
 
@@ -214,17 +221,55 @@ The repository includes both full-frame and slice-oriented training artifacts. T
 
 Training details are documented in `docs/TRAINING.md`.
 
+## Plugin Parameter Validation
+
+All `nvsahipostprocess` parameters have been validated with automated tests across two
+density regimes:
+
+| Video | Detections/frame | Scene | Tests |
+|-------|-----------------|-------|-------|
+| `aerial_vehicles.mp4` | ~311 | Moderate — vehicles | 21/21 passed |
+| `aerial_crowding_02.mp4` | ~1312 | Very dense — pedestrians + motorcycles | 21/21 passed |
+
+Key findings:
+
+- **match-metric**: IoS suppresses more duplicates than IoU (recommended for SAHI)
+- **match-threshold**: monotonic — lower threshold → more aggressive suppression
+- **class-agnostic=true**: +36% more suppression on vehicles, +13% on dense crowds
+- **enable-merge=false**: reliably produces zero merges (pure NMS mode)
+- **max-detections**: exact cap — removes 789 extra detections in dense scenes
+- **PERF profiling**: `GST_DEBUG=nvsahipostprocess:4` shows latency summary every ~1s
+
+### Pipeline Throughput (RTX 5080, FP16, 9 slices/frame, 2560×1440)
+
+| Video | Dets/frame | Pipeline FPS | Postprocess ms/frame | Postprocess overhead |
+|-------|-----------|-------------|---------------------|---------------------|
+| `aerial_vehicles` | ~311 | **29.9 fps** | 0.35 ms | 1.0% |
+| `aerial_crowding_02` | ~1,312 | **24.4 fps** | 1.55 ms | 3.8% |
+
+The postprocess NMM is never the bottleneck — TensorRT inference on 9 slices dominates.
+At 4× more detections, postprocess latency scales sub-linearly (spatial grid indexing).
+
+Run the automated test suite:
+
+```bash
+# Default video (aerial_vehicles.mp4)
+scripts/test_postprocess_params.sh
+
+# Custom video
+scripts/test_postprocess_params.sh python_test/videos/aerial_crowding_02.mp4
+```
+
+Full results: [Parameter Tests — Vehicles](docs/PARAMETER_TESTS.md) |
+[Parameter Tests — Dense Crowd](docs/PARAMETER_TESTS_CROWDING.md)
+
 ## Limitations
 
-Current limitations identified in `docs/REVIEW.md` include:
+- The bidirectional NMM algorithm (non-greedy, transitive merge chains) is not implemented. GreedyNMM covers real-time use-cases adequately.
+- Merged mask resolution is capped at 512x512 to prevent excessive memory allocation.
+- Only single-source pipelines have been validated end-to-end; multi-source is supported via OpenMP parallelism but has not been benchmarked.
 
-- segmentation masks are not merged when bounding boxes are merged
-- class labels may remain unchanged in some `class-agnostic=true` merge cases
-- the merge step does not fully match the SAHI Python reference behavior
-- post-processing still uses `O(n^2)` pair comparisons in dense scenes
-- only single-source pipelines have been validated
-
-This repository is published as-is. It is useful as a reference implementation and a base for further work, but it should be reviewed and tested before use in production environments.
+See `docs/PLUGINS.md` for the full property reference and algorithm details.
 
 ## License
 

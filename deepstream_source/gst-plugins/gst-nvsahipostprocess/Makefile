@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # nvsahipostprocess — SAHI GreedyNMM post-process plugin for DeepStream
+# v1.2: spatial indexing, mask merge, OpenMP parallelism
 
 CUDA_VER?=
 ifeq ($(CUDA_VER),)
@@ -16,16 +17,18 @@ LIB:=libnvdsgst_sahipostprocess.so
 
 DS_ROOT:=/opt/nvidia/deepstream/deepstream
 
-CFLAGS+= -fPIC -std=c++17 -Wall -Werror \
+CFLAGS+= -fPIC -std=c++17 -Wall -Werror -O2 \
 	 -I /usr/local/cuda-$(CUDA_VER)/include \
-	 -I ../../includes
+	 -I $(DS_ROOT)/sources/includes \
+	 -fopenmp
 
 GST_INSTALL_DIR?=$(DS_ROOT)/lib/gst-plugins/
 LIB_INSTALL_DIR?=$(DS_ROOT)/lib/
 
 LIBS := -shared -Wl,-no-undefined \
 	-L$(LIB_INSTALL_DIR) -lnvdsgst_meta -lnvds_meta \
-	-Wl,-rpath,$(LIB_INSTALL_DIR)
+	-Wl,-rpath,$(LIB_INSTALL_DIR) \
+	-lgomp
 
 OBJS:= $(SRCS:.cpp=.o)
 
