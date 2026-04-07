@@ -1,0 +1,17 @@
+# SAHI Grid Search Results — Tue Apr  7 21:47:28 UTC 2026
+# Baseline: visdrone-full-640 @ 1440p, overlap=0.2, mean=261.8 dets/frame
+
+Run   Model                  Slice  Overlap  Full  MeanDet  Diff     Pct      PedDet   FPS      Status
+---   -----                  -----  -------  ----  -------  ----     ---      ------   ---      ------
+1     visdrone-full-640      640    0.2      yes   235.4    -26.4    -10.1%   2.1      23.18    OK    
+2     visdrone-full-640      640    0.3      yes   236.0    -25.8    -9.9%    2.0      22.78    OK    
+3     visdrone-full-640      640    0.4      yes   246.9    -14.9    -5.7%    2.5      13.39    OK    
+4     visdrone-full-640      448    0.2      yes   281.3    19.5     7.4%     4.9      11.59    OK    
+5     visdrone-full-640      448    0.3      yes   291.4    29.6     11.3%    4.0      8.59     OK    
+6     visdrone-full-640      320    0.2      yes   277.1    15.3     5.8%     5.6      6.39     OK    
+7     visdrone-sliced-448    448    0.2      yes   260.9    -0.9     -0.3%    1.4      21.76    OK    
+8     visdrone-sliced-448    448    0.3      yes   268.5    6.7      2.6%     1.1      16.79    OK    
+9     visdrone-sliced-448    448    0.4      yes   276.9    15.1     5.8%     1.1      14.59    OK    
+10    visdrone-sliced-448    320    0.2      yes   341.4    79.6     30.4%    1.9      10.6     OK    
+11    visdrone-full-640      640    0.3      no    219.2    -42.6    -16.3%   2.0      26.39    OK    
+12    visdrone-sliced-448    448    0.3      no    263.8    2.0      0.8%     1.1      17.38    OK    

@@ -107,6 +107,38 @@ MODELS = {
         ],
         "default_slice": 448,
     },
+    "visdrone-drone-int8": {
+        "description": "VisDrone GELAN-C (INT8, edge-optimized for Jetson Orin)",
+        "pgie_config": "config/pgie/visdrone-drone-int8.txt",
+        "preprocess_config": "config/preprocess/preprocess_640_edge.txt",
+        "input_size": 640,
+        "num_classes": 11,
+        "class_names": [
+            "pedestrian", "people", "bicycle", "car", "van",
+            "truck", "tricycle", "awning-tricycle", "bus", "motor", "others",
+        ],
+        "class_short": [
+            "ped", "ppl", "bik", "car", "van",
+            "trk", "tri", "awn", "bus", "mtr", "oth",
+        ],
+        "default_slice": 640,
+    },
+    "visdrone-drone-fp16": {
+        "description": "VisDrone GELAN-C (FP16, edge config for Jetson Orin)",
+        "pgie_config": "config/pgie/visdrone-drone-fp16.txt",
+        "preprocess_config": "config/preprocess/preprocess_640_edge_desktop.txt",
+        "input_size": 640,
+        "num_classes": 11,
+        "class_names": [
+            "pedestrian", "people", "bicycle", "car", "van",
+            "truck", "tricycle", "awning-tricycle", "bus", "motor", "others",
+        ],
+        "class_short": [
+            "ped", "ppl", "bik", "car", "van",
+            "trk", "tri", "awn", "bus", "mtr", "oth",
+        ],
+        "default_slice": 640,
+    },
 }
 
 # ─── Constants ───────────────────────────────────────────────────────────────

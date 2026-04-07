@@ -3,9 +3,10 @@ gpu-id=0
 net-scale-factor=0.0039215697906911373
 model-color-format=0
 onnx-file=../../models/gelan-c-visdrone-full-frame-640-end2end.onnx
-model-engine-file=../../models/gelan-c-visdrone-full-frame-640-rtx4050.engine
+#model-engine-file=../../models/gelan-c-visdrone-640-edge-fp16.engine
 labelfile-path=../../models/visdrone_label.txt
-batch-size=4
+# Batch size 8: covers 7 SAHI slices (1080p) + headroom
+batch-size=8
 infer-dims=3;640;640
 force-implicit-batch-dim=0
 # 0: FP32 1: INT8 2: FP16
@@ -23,4 +24,3 @@ custom-lib-path=/opt/nvidia/deepstream/deepstream/lib/libnvds_infer_yolo.so
 
 [class-attrs-all]
 pre-cluster-threshold=0.25
-
